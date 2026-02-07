@@ -1,21 +1,38 @@
 import React from 'react';
-import { ThemeProvider } from 'styled-components';
-import { GlobalStyles } from './styles/GlobalStyles';
+import { createGlobalStyle, ThemeProvider } from 'styled-components';
+import { styleReset } from 'react95';
+
+// You can swap 'original' with 'vaporTeal', 'matrix', etc. later
+import original from 'react95/dist/themes/original'; 
+import ms_sans_serif from 'react95/dist/fonts/ms_sans_serif.woff2';
+import ms_sans_serif_bold from 'react95/dist/fonts/ms_sans_serif_bold.woff2';
+
 import Desktop from './components/Desktop';
 
-// 1. CHANGE THIS IMPORT
-import psyTheme from './styles/PsyTheme'; 
-// (Remove 'import original from ...')
+const GlobalStyles = createGlobalStyle`
+  ${styleReset}
+  @font-face {
+    font-family: 'ms_sans_serif';
+    src: url('${ms_sans_serif}') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'ms_sans_serif';
+    src: url('${ms_sans_serif_bold}') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+  }
+  body {
+    font-family: 'ms_sans_serif';
+  }
+`;
 
-function App() {
-  return (
-    // 2. PASS THE CUSTOM THEME HERE
-    <ThemeProvider theme={psyTheme}>
-      <GlobalStyles />
-      <div className="crt-overlay" />
-      <Desktop />
-    </ThemeProvider>
-  );
-}
+const App = () => (
+  <ThemeProvider theme={original}> {/* <--- THIS IS CRITICAL FOR THE THEME */}
+    <GlobalStyles />
+    <Desktop />
+  </ThemeProvider>
+);
 
 export default App;

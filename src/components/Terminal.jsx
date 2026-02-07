@@ -1,91 +1,185 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { processCommand } from '../utils/commandParser';
 
-const TerminalWrapper = styled.div`
+// --- MODERN STYLES ---
+
+const Wrapper = styled.div`
   height: 100%;
-  background: #000;
-  color: #0f0;
-  font-family: 'VT323', monospace;
-  padding: 10px;
+  width: 100%;
+  
+  /* Modern Acrylic / Glassmorphism Effect */
+  background: rgba(20, 20, 20, 0.85); /* Dark semi-transparent */
+  backdrop-filter: blur(12px);         /* Blurs what's behind it */
+  -webkit-backdrop-filter: blur(12px);
+  
+  color: #f0f0f0; /* Soft White text */
+  font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace; /* Modern Monospace */
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 15px;
+  
   overflow-y: auto;
-  font-size: 1.1rem;
+  box-sizing: border-box;
+
+  /* Custom Scrollbar */
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
 `;
 
-const Line = styled.div`
-  margin-bottom: 4px;
-  color: ${props => props.type === 'input' ? '#fff' : '#0f0'};
-  text-shadow: ${props => props.isGlitch ? '2px 0 red, -2px 0 blue' : 'none'};
+const OutputLine = styled.div`
+  margin-bottom: 2px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  
+  /* Color coding for specific keywords if you want */
+  &.error { color: #ff5555; }
+  &.success { color: #50fa7b; }
+  &.info { color: #8be9fd; }
 `;
 
 const InputWrapper = styled.div`
   display: flex;
   align-items: center;
+  margin-top: 5px;
+`;
+
+// Modern Prompt Style (Ubuntu/Mac style)
+const PromptLabel = styled.span`
+  color: #50fa7b; /* Neon Green */
+  font-weight: bold;
+  margin-right: 8px;
+  text-shadow: 0 0 5px rgba(80, 250, 123, 0.4); /* Subtle glow */
+`;
+
+const Directory = styled.span`
+  color: #bd93f9; /* Purple */
+  font-weight: bold;
+  margin-right: 8px;
 `;
 
 const StyledInput = styled.input`
   background: transparent;
   border: none;
-  color: #0f0;
-  font-family: 'VT323', monospace;
-  font-size: 1.1rem;
+  color: #fff;
+  font-family: inherit;
+  font-size: inherit;
   flex: 1;
   outline: none;
-  margin-left: 8px;
-  caret-color: #0f0; 
+  caret-color: #50fa7b; /* Blinking green cursor */
 `;
 
-const Terminal = ({ toggleWindow }) => {
+const Terminal = () => {
   const [history, setHistory] = useState([
-    { type: 'output', text: "PsyOS v1.0.0 [Snapshot 2026]" },
-    { type: 'output', text: "(c) 2026 Khandaker Corp. All rights reserved." },
-    { type: 'output', text: "Type 'help' for a list of commands." },
-    { type: 'output', text: "" }
+    { text: "Welcome to Portfolio OS v2.0", type: 'info' },
+    { text: "Type 'help' to see available commands.", type: 'info' },
+    { text: "-------------------------------------", type: '' }
   ]);
-  const [inputVal, setInputVal] = useState("");
+  const [input, setInput] = useState("");
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-scroll to bottom whenever history changes
+  // Auto-scroll to bottom
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
 
-  // Focus input when clicking anywhere in terminal
+  // Focus input on click
   const handleWrapperClick = () => {
     inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e) => {
+  const handleCommand = (cmd) => {
+    const trimmed = cmd.trim().toLowerCase();
+    let response = [];
+
+    switch (trimmed) {
+      case 'help':
+        response = [
+          { text: "Available Commands:", type: 'success' },
+          { text: "  about    - Who am I?", type: '' },
+          { text: "  projects - View my work", type: '' },
+          { text: "  socials  - Contact info", type: '' },
+          { text: "  clear    - Clear terminal", type: '' },
+          { text: "  exit     - Close terminal", type: '' },
+        ];
+        break;
+      case 'about':
+        response = [{ text: "I am a Fullstack Developer proficient in React, Node.js, and creating cool retro OS websites!", type: '' }];
+        break;
+      case 'projects':
+        response = [
+          { text: "1. Portfolio OS (React)", type: '' },
+          { text: "2. E-Commerce Platform (Node/Mongo)", type: '' },
+          { text: "Type 'open [number]' to view (simulated)", type: 'info' }
+        ];
+        break;
+      case 'socials':
+        response = [
+          { text: "GitHub: github.com/khandaker", type: '' },
+          { text: "LinkedIn: linkedin.com/in/khandaker", type: '' }
+        ];
+        break;
+      case 'clear':
+        setHistory([]);
+        return; // Early return to avoid adding the 'clear' command to history
+      case 'exit':
+        // logic to close window could go here if passed via props
+        response = [{ text: "Session terminated.", type: 'error' }];
+        break;
+      case '':
+        break;
+      default:
+        response = [{ text: `Command not found: ${trimmed}`, type: 'error' }];
+    }
+
+    setHistory(prev => [
+      ...prev, 
+      { text: `visitor@portfolio:~$ ${cmd}`, type: 'prompt' }, // The command you typed
+      ...response
+    ]);
+  };
+
+  const onKeyDown = (e) => {
     if (e.key === 'Enter') {
-      if (!inputVal.trim()) return;
-      processCommand(inputVal, setHistory, toggleWindow);
-      setInputVal("");
+      handleCommand(input);
+      setInput('');
     }
   };
 
   return (
-    <TerminalWrapper onClick={handleWrapperClick}>
+    <Wrapper onClick={handleWrapperClick}>
       {history.map((line, i) => (
-        <Line key={i} type={line.type} isGlitch={line.text.includes("Just Monika")}>
+        <OutputLine key={i} className={line.type === 'prompt' ? '' : line.type}>
           {line.text}
-        </Line>
+        </OutputLine>
       ))}
       
       <InputWrapper>
-        <span>C:\Users\Admin&gt;</span>
+        <PromptLabel>visitor@portfolio</PromptLabel>
+        <Directory>:~$</Directory>
         <StyledInput 
           ref={inputRef}
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value)}
-          onKeyDown={handleKeyDown}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
           autoFocus
-          spellCheck={false}
+          spellCheck="false"
           autoComplete="off"
         />
       </InputWrapper>
       <div ref={endRef} />
-    </TerminalWrapper>
+    </Wrapper>
   );
 };
 
