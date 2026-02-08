@@ -6,7 +6,7 @@ export const APPS = [
   // --- COLUMN 1 (Left Side) ---
   { 
     id: 'about', 
-    title: 'About Me', 
+    title: 'About', 
     iconFile: 'bio.ico', 
     iconComponent: UserIcon, 
     type: 'app', 
@@ -109,8 +109,8 @@ export const APPS = [
   },
   { 
     id: 'ai', 
-    title: 'Asuna', 
-    iconFile: 'asuna.png', 
+    title: 'Albedo', 
+    iconFile: 'albedo.png', 
     iconComponent: TerminalIcon, 
     type: 'app', 
     showInMenu: false,

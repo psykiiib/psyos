@@ -1,70 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
+import { APPS } from '../utils/apps'; // Import APPS to list programs
 
-// --- MODERN STYLES ---
+// --- STYLES ---
 
 const Wrapper = styled.div`
   height: 100%;
   width: 100%;
+  background: #000; /* Pure Black for Retro Terminal */
+  color: #c0c0c0;   /* Classic Terminal Gray/White */
   
-  /* Modern Acrylic / Glassmorphism Effect */
-  background: rgba(20, 20, 20, 0.85); /* Dark semi-transparent */
-  backdrop-filter: blur(12px);         /* Blurs what's behind it */
-  -webkit-backdrop-filter: blur(12px);
-  
-  color: #f0f0f0; /* Soft White text */
-  font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace; /* Modern Monospace */
-  font-size: 14px;
-  line-height: 1.5;
-  padding: 15px;
+  /* [UPDATED] Retro Font & Bigger Size */
+  font-family: 'Fixedsys', 'Fixedsys Excelsior', 'VT323', monospace;
+  font-size: 20px;
+  line-height: 1.2;
+  padding: 10px;
   
   overflow-y: auto;
   box-sizing: border-box;
-
-  /* Custom Scrollbar */
-  &::-webkit-scrollbar {
-    width: 10px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
+  
+  /* Retro Scrollbar */
+  &::-webkit-scrollbar { width: 14px; }
+  &::-webkit-scrollbar-track { background: #000; }
+  &::-webkit-scrollbar-thumb { 
+    background: #c0c0c0; 
+    border: 2px solid #000;
   }
 `;
 
 const OutputLine = styled.div`
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   white-space: pre-wrap;
   word-wrap: break-word;
-  
-  /* Color coding for specific keywords if you want */
-  &.error { color: #ff5555; }
-  &.success { color: #50fa7b; }
-  &.info { color: #8be9fd; }
 `;
 
 const InputWrapper = styled.div`
   display: flex;
   align-items: center;
-  margin-top: 5px;
+  flex-wrap: wrap; 
 `;
 
-// Modern Prompt Style (Ubuntu/Mac style)
 const PromptLabel = styled.span`
-  color: #50fa7b; /* Neon Green */
-  font-weight: bold;
-  margin-right: 8px;
-  text-shadow: 0 0 5px rgba(80, 250, 123, 0.4); /* Subtle glow */
-`;
-
-const Directory = styled.span`
-  color: #bd93f9; /* Purple */
-  font-weight: bold;
+  color: #fff; 
   margin-right: 8px;
 `;
 
@@ -76,76 +53,113 @@ const StyledInput = styled.input`
   font-size: inherit;
   flex: 1;
   outline: none;
-  caret-color: #50fa7b; /* Blinking green cursor */
+  caret-color: #fff; 
+  min-width: 50%;
 `;
 
-const Terminal = () => {
+const Terminal = ({ openApp, onClose, onShutdown }) => {
   const [history, setHistory] = useState([
-    { text: "Welcome to Portfolio OS v2.0", type: 'info' },
-    { text: "Type 'help' to see available commands.", type: 'info' },
-    { text: "-------------------------------------", type: '' }
+    { text: "PsyOS (C) 2026", type: 'info' },
+    { text: "Type 'help' for commands.", type: 'info' },
+    { text: "", type: '' } // spacer
   ]);
   const [input, setInput] = useState("");
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
 
-  // Focus input on click
   const handleWrapperClick = () => {
     inputRef.current?.focus();
   };
 
   const handleCommand = (cmd) => {
-    const trimmed = cmd.trim().toLowerCase();
+    const trimmed = cmd.trim(); // Keep case for arguments, but lowercase command
+    const args = trimmed.split(' ');
+    const command = args[0].toLowerCase();
+    
     let response = [];
 
-    switch (trimmed) {
+    switch (command) {
       case 'help':
         response = [
-          { text: "Available Commands:", type: 'success' },
-          { text: "  about    - Who am I?", type: '' },
-          { text: "  projects - View my work", type: '' },
-          { text: "  socials  - Contact info", type: '' },
-          { text: "  clear    - Clear terminal", type: '' },
-          { text: "  exit     - Close terminal", type: '' },
+          { text: "COMMANDS LIST:", type: 'header' },
+          { text: "  about      Open About Me", type: '' },
+          { text: "  projects   Open Projects", type: '' },
+          { text: "  socials    Open Contact Info", type: '' },
+          { text: "  programs   List all installed apps", type: '' },
+          { text: "  run [id]   Run a specific program", type: '' },
+          { text: "  clear      Clear screen", type: '' },
+          { text: "  shutdown   Power off system", type: '' },
+          { text: "  exit       Close terminal", type: '' },
         ];
         break;
+
       case 'about':
-        response = [{ text: "I am a Fullstack Developer proficient in React, Node.js, and creating cool retro OS websites!", type: '' }];
+        response = [{ text: "Launching Profile...", type: 'success' }];
+        openApp('notepad'); // Assuming Notepad is your "About" app based on previous setup
         break;
+
       case 'projects':
-        response = [
-          { text: "1. Portfolio OS (React)", type: '' },
-          { text: "2. E-Commerce Platform (Node/Mongo)", type: '' },
-          { text: "Type 'open [number]' to view (simulated)", type: 'info' }
-        ];
+        // If you have a specific projects app, change 'notepad' to 'projects'
+        // For now, I'll assume we open a folder or text file
+        response = [{ text: "Accessing Projects Database...", type: 'success' }];
+        openApp('minesweeper'); // Placeholder: Replace with actual projects app ID
         break;
+
       case 'socials':
+        response = [{ text: "Opening Contact Channels...", type: 'success' }];
+        openApp('contact');
+        break;
+
+      case 'programs':
+        const appList = APPS.map(a => `  ${a.id.padEnd(15)} - ${a.title}`).join('\n');
         response = [
-          { text: "GitHub: github.com/khandaker", type: '' },
-          { text: "LinkedIn: linkedin.com/in/khandaker", type: '' }
+          { text: "INSTALLED PROGRAMS:", type: 'header' },
+          { text: appList, type: '' }
         ];
         break;
+
+      case 'run':
+        if (args[1]) {
+           const appId = args[1].toLowerCase();
+           const appExists = APPS.find(a => a.id === appId);
+           if (appExists) {
+               response = [{ text: `Starting ${appExists.title}...`, type: 'success' }];
+               openApp(appId);
+           } else {
+               response = [{ text: `Error: Program '${appId}' not found.`, type: 'error' }];
+           }
+        } else {
+            response = [{ text: "Usage: run [program_id]", type: 'error' }];
+        }
+        break;
+
+      case 'shutdown':
+        onShutdown(); // Trigger system shutdown
+        break;
+
+      case 'exit':
+        onClose(); // Close terminal window
+        break;
+
       case 'clear':
         setHistory([]);
-        return; // Early return to avoid adding the 'clear' command to history
-      case 'exit':
-        // logic to close window could go here if passed via props
-        response = [{ text: "Session terminated.", type: 'error' }];
-        break;
+        return; 
+
       case '':
         break;
+
       default:
-        response = [{ text: `Command not found: ${trimmed}`, type: 'error' }];
+        response = [{ text: `Bad command or file name: ${command}`, type: 'error' }];
     }
 
     setHistory(prev => [
       ...prev, 
-      { text: `visitor@portfolio:~$ ${cmd}`, type: 'prompt' }, // The command you typed
+      { text: `visitor@psyos.terminal:~$ ${cmd}`, type: 'prompt' }, // Maintain prompt style
       ...response
     ]);
   };
@@ -160,14 +174,15 @@ const Terminal = () => {
   return (
     <Wrapper onClick={handleWrapperClick}>
       {history.map((line, i) => (
-        <OutputLine key={i} className={line.type === 'prompt' ? '' : line.type}>
+        <OutputLine key={i} style={{ color: line.type === 'error' ? '#ff5555' : '#c0c0c0' }}>
+          {/* If it's a prompt line, we could colorize the user part differently if we parsed it, 
+              but for now keeping it white/gray is authentic to DOS/Unix */}
           {line.text}
         </OutputLine>
       ))}
       
       <InputWrapper>
-        <PromptLabel>visitor@portfolio</PromptLabel>
-        <Directory>:~$</Directory>
+        <PromptLabel>visitor@psyos.terminal:~$</PromptLabel>
         <StyledInput 
           ref={inputRef}
           value={input}

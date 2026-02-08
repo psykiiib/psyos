@@ -3,7 +3,9 @@ import PaintApp from './apps/PaintApp'; // Using the iframe version
 import Notepad from './apps/Notepad';
 import Projects from './apps/Projects';
 import About from './apps/About';
+import Contact from './apps/Contact';
 import RecycleBin from './apps/RecycleBin';
+import UnderConstruction from './apps/UnderConstruction';
 
 // --- Import New Games ---
 import Minesweeper from './apps/Minesweeper';
@@ -17,7 +19,8 @@ export const AppRegistry = {
   projects: Projects,
   about: About,
   recycle: RecycleBin,
-  contact: About,
+  contact: Contact,
+  projects: UnderConstruction,
   
   // --- Register New Games ---
   minesweeper: Minesweeper,

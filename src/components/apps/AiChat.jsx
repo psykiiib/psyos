@@ -76,7 +76,7 @@ const AiChat = () => {
       <MessageArea>
         {messages.map((msg, i) => (
           <Message key={i} $isUser={msg.isUser}> {/* <--- FIXED HERE with $ */ }
-            <span className="name">{msg.isUser ? 'YOU:' : 'ASUNA:'}</span>
+            <span className="name">{msg.isUser ? 'YOU:' : 'Albedo:'}</span>
             {msg.text}
           </Message>
         ))}

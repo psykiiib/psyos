@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { AppBar, Toolbar, Button, List, ListItem, Divider } from 'react95';
 import Draggable from 'react-draggable';
 import BootSequence from './BootSequence';
@@ -8,14 +8,48 @@ import { APPS } from '../utils/apps';
 
 // --- STYLES ---
 
+// Rainbow Animation for Logo (Same as BootSequence)
+const rainbow = keyframes`
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+`;
+
 const Wrapper = styled.div`
-  /* background-image: url('/wallpaper.jpg'); */ 
   background-color: #008080; 
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+`;
+
+const ShutdownWrapper = styled.div`
+  background-color: #000;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  box-sizing: border-box;
+  z-index: 99999;
+  
+  font-family: 'Fixedsys', 'Fixedsys Excelsior', 'VT323', monospace; 
+  font-size: 26px; 
+  color: #bfbfbf;
+  line-height: 1.2;
+`;
+
+const FooterLogo = styled.pre`
+  margin-top: auto;
+  font-family: 'Courier New', monospace; 
+  font-size: 20px; 
+  line-height: 16px; 
+  font-weight: bold;
+  white-space: pre;  
+  background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ${rainbow} 2s linear infinite; 
 `;
 
 const DesktopArea = styled.div`
@@ -30,33 +64,38 @@ const IconWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 74px; 
+  width: 70px; 
   padding: 2px;
   cursor: pointer;
   text-align: center;
   color: white; 
   position: absolute; 
   
-  /* [COMMENTED OUT AS REQUESTED]
   &:hover {
     background: rgba(0, 0, 128, 0.5); 
     border: 1px dotted #fff;
     border-radius: 2px;
   }
-  */
 
   img {
-    width: 32px;
-    height: 32px;
-    margin-bottom: 2px;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 0px; 
     object-fit: contain;
     pointer-events: none; 
+    user-select: none;
+    -webkit-user-drag: none;
+    image-rendering: pixelated;
   }
   
   div {
-    font-size: 12px;
-    line-height: 1.1;
+    font-family: 'Fixedsys', 'Fixedsys Excelsior', 'VT323', monospace;
+    font-size: 14px; 
+    line-height: 0.9; 
     text-shadow: 1px 1px 1px #000;
+    padding: 0px;
+    word-break: break-word; 
+    margin-top: 2px;
   }
 `;
 
@@ -114,8 +153,64 @@ const StyledAppBar = styled(AppBar)`
   padding: 2px;
 `;
 
+// --- SHUTDOWN COMPONENT ---
+const ShutdownSequence = ({ onComplete }) => {
+  const [lines, setLines] = useState([]);
+
+  useEffect(() => {
+    const runShutdown = async () => {
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      
+      setLines(["Initiating Shutdown Sequence..."]);
+      await wait(800);
+      setLines(prev => [...prev, "Stopping Services... [OK]"]);
+      await wait(600);
+      setLines(prev => [...prev, "Saving User Configuration... [OK]"]);
+      await wait(500);
+      setLines(prev => [...prev, "Unmounting Volumes..."]);
+      await wait(1000);
+      setLines(prev => [...prev, "Parking Heads..."]);
+      await wait(800);
+      setLines(prev => [...prev, "Power Down."]);
+      await wait(1500); 
+      
+      onComplete(); 
+    };
+
+    runShutdown();
+  }, [onComplete]);
+
+  return (
+    <ShutdownWrapper>
+      <div style={{ marginBottom: '20px' }}>
+        PhoenixBIOS 4.0 Release 6.1<br/>
+        Copyright 1985-2026 Phoenix Technologies Ltd.<br/>
+        All Rights Reserved
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        {lines.map((line, i) => (
+           <div key={i}>{line}</div>
+        ))}
+      </div>
+
+      <FooterLogo>
+{`
+██████╗ ███████╗██╗   ██╗ ██████╗ ███████╗
+██╔══██╗██╔════╝╚██╗ ██╔╝██╔═══██╗██╔════╝
+██████╔╝███████╗ ╚████╔╝ ██║   ██║███████╗
+██╔═══╝ ╚════██║  ╚██╔╝  ██║   ██║╚════██║
+██║     ███████║   ██║   ╚██████╔╝███████║
+╚═╝     ╚══════╝   ╚═╝    ╚═════╝ ╚══════╝
+`}
+      </FooterLogo>
+    </ShutdownWrapper>
+  );
+};
+
 const Desktop = () => {
   const [booted, setBooted] = useState(false);
+  const [isShuttingDown, setIsShuttingDown] = useState(false); 
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPrograms, setShowPrograms] = useState(false); 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -123,19 +218,19 @@ const Desktop = () => {
   const iconRefs = useRef({});
   const [iconPositions, setIconPositions] = useState({});
 
-  // [UPDATED] Separated states for Open (in taskbar) and Minimized (hidden view)
-  const [openWindows, setOpenWindows] = useState({ notepad: true });      // { id: true }
-  const [minimizedWindows, setMinimizedWindows] = useState({}); // { id: true }
+  const [openWindows, setOpenWindows] = useState({ notepad: true });      
+  const [minimizedWindows, setMinimizedWindows] = useState({}); 
 
-  // Calculate Initial Positions
+  const [activeWindowOrder, setActiveWindowOrder] = useState(['notepad']); 
+
   useEffect(() => {
     const initialPos = {};
     APPS.forEach((app) => {
       const col = app.grid ? app.grid.col : 1; 
       const row = app.grid ? app.grid.row : 1;
       initialPos[app.id] = {
-        x: 20 + ((col - 1) * 70), 
-        y: 20 + ((row - 1) * 70)
+        x: 10 + ((col - 1) * 70), 
+        y: 10 + ((row - 1) * 70)
       };
     });
     setIconPositions(initialPos);
@@ -146,50 +241,41 @@ const Desktop = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // ... inside the Desktop component ...
-
   useEffect(() => {
     const titles = [
-      "PsyOS",
-      "psyk.dev",
-      "dev??", 
-      "psyO$",
-      "psy0s",
-      "qsyOS", 
-      "psy", 
-      "psykiiib", 
-      "psyOS", 
-      "?shy",
-      "psy+os", 
-      "psyk-", 
-      "kib?",
-      "psyOS", 
-      "Sh4har!ar", 
-      "Sha..",
-      "Sha...",
-      "Sha....",
-      "ma!sha?", 
-      "psSsSsSs", 
-      "psyOS",
-      "psyOS.exe",
-      "spyOS",
-      "psy4O4!",
-      "++SOS",
+      "PsyOS", "psyk.dev", "dev??", "psyO$", "psy0s",
+      "qsyOS", "psy", "psykiiib", "psyOS", "?shy",
+      "psy+os", "psyk-", "kib?", "psyOS", "Sh4har!ar", 
+      "Sha..", "mai?", "psSsSsSs", "psyOS", "psyOS.exe",
+      "spyOS", "psy4O4!", "++SOS",
     ];
-    
     let index = 0;
-    
     const intervalId = setInterval(() => {
       document.title = titles[index];
-      // Move to next title, loop back to 0 if at the end
       index = (index + 1) % titles.length; 
-    }, 1000); // Change every 1000ms (1 second)
-
-    // Cleanup when component unmounts
+    }, 1000); 
     return () => clearInterval(intervalId);
   }, []);
 
-  // [NEW] Logic: Open App
+  const handleShutdown = () => {
+    setMenuOpen(false);
+    setIsShuttingDown(true); 
+  };
+
+  const handleReboot = () => {
+    setBooted(false);      
+    setIsShuttingDown(false); 
+    setOpenWindows({ notepad: true });
+    setActiveWindowOrder(['notepad']);
+  };
+
+  const bringToFront = (key) => {
+    setActiveWindowOrder(prev => {
+        const newOrder = prev.filter(id => id !== key);
+        return [...newOrder, key];
+    });
+  };
+
   const openApp = (key) => {
     const app = APPS.find(a => a.id === key);
     if (app && app.type === 'link') {
@@ -199,28 +285,27 @@ const Desktop = () => {
     }
     
     setOpenWindows(prev => ({ ...prev, [key]: true }));
-    setMinimizedWindows(prev => ({ ...prev, [key]: false })); // Ensure it pops up
+    setMinimizedWindows(prev => ({ ...prev, [key]: false }));
     setMenuOpen(false);
+    
+    bringToFront(key);
   };
 
-  // [NEW] Logic: Close App (Remove from Taskbar)
   const closeApp = (key) => {
     setOpenWindows(prev => ({ ...prev, [key]: false }));
     setMinimizedWindows(prev => ({ ...prev, [key]: false }));
+    setActiveWindowOrder(prev => prev.filter(id => id !== key));
   };
 
-  // [NEW] Logic: Minimize App (Hide Window, Keep in Taskbar)
   const minimizeApp = (key) => {
     setMinimizedWindows(prev => ({ ...prev, [key]: true }));
   };
 
-  // [NEW] Logic: Toggle (Taskbar Click)
   const toggleMinimize = (key) => {
     if (minimizedWindows[key]) {
-      // If hidden, show it
       setMinimizedWindows(prev => ({ ...prev, [key]: false }));
+      bringToFront(key);
     } else {
-      // If showing, hide it
       setMinimizedWindows(prev => ({ ...prev, [key]: true }));
     }
   };
@@ -232,7 +317,19 @@ const Desktop = () => {
     }));
   };
 
-  if (!booted) return <BootSequence onComplete={() => setBooted(true)} />;
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
+  if (isShuttingDown) {
+    return <ShutdownSequence onComplete={handleReboot} />;
+  }
+
+  if (!booted) {
+      return <BootSequence onComplete={() => setBooted(true)} />;
+  }
 
   return (
     <Wrapper onClick={() => setMenuOpen(false)}> 
@@ -253,27 +350,36 @@ const Desktop = () => {
               <IconWrapper 
                 ref={iconRefs.current[app.id]} 
                 onDoubleClick={() => openApp(app.id)} 
+                onContextMenu={handleContextMenu}
               >
                  <img 
                    src={`/icons/${app.iconFile}`} 
                    alt="?"
+                   draggable="false" 
                    onError={(e) => {
                      e.target.src = "https://win98icons.alexmeub.com/icons/png/file_lines-0.png"; 
                    }}
                  />
-                <div style={{ fontFamily: 'Tahoma, sans-serif' }}>{app.title}</div>
+                <div>{app.title}</div>
               </IconWrapper>
             </Draggable>
           );
         })}
       </DesktopArea>
 
-      {/* [UPDATED] Pass all state handlers to WindowManager */}
+      {/* [UPDATED] Pass functions to WindowManager */}
       <WindowManager 
         openWindows={openWindows} 
         minimizedWindows={minimizedWindows}
         closeWindow={closeApp} 
         minimizeWindow={minimizeApp}
+        
+        activeWindowOrder={activeWindowOrder}
+        bringToFront={bringToFront}
+        
+        // Pass these so Terminal can use them
+        openApp={openApp}
+        onShutdown={handleShutdown}
       />
 
       <StyledAppBar>
@@ -308,7 +414,7 @@ const Desktop = () => {
 
                     {showPrograms && (
                       <SubMenu>
-                         {APPS.filter(app => app.showInMenu).map(app => (
+                          {APPS.filter(app => app.showInMenu).map(app => (
                           <MenuItem key={app.id} onClick={() => openApp(app.id)}>
                             <img src={`/icons/${app.iconFile}`} alt="" onError={(e) => e.target.src="https://win98icons.alexmeub.com/icons/png/file_lines-0.png"}/>
                             {app.title}
@@ -330,42 +436,42 @@ const Desktop = () => {
                   
                   <Divider />
                   
-                  <MenuItem>
-                     <img src="/icons/shutdown.ico" alt="" onError={(e) => e.target.style.display='none'}/>
-                     Shut Down...
+                  <MenuItem onClick={handleShutdown}>
+                      <img src="/icons/shutdown.ico" alt="" onError={(e) => e.target.style.display='none'}/>
+                      Shut Down...
                   </MenuItem>
                 </MenuList>
               </StartMenuWrapper>
             )}
           </div>
           
-          {/* [UPDATED] Taskbar Area */}
           <div style={{ marginLeft: '5px', display: 'flex', gap: '2px', flex: 1, overflowX: 'auto' }}>
              {Object.keys(openWindows).map(key => openWindows[key] && (
                <Button 
                  key={key} 
-                 // If NOT minimized, button looks 'pressed' (active)
-                 active={!minimizedWindows[key]} 
-                 variant="default" 
+                 active={!minimizedWindows[key] && activeWindowOrder[activeWindowOrder.length - 1] === key} 
+                 variant={activeWindowOrder[activeWindowOrder.length - 1] === key ? "default" : "flat"} 
                  size="sm" 
-                 onClick={() => toggleMinimize(key)} // Clicking toggles visibility
+                 onClick={() => toggleMinimize(key)} 
                  style={{ 
-                    fontWeight: 'bold', 
-                    minWidth: '100px', 
-                    textAlign: 'left', 
-                    justifyContent: 'flex-start', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '5px' 
+                   fontWeight: 'bold', 
+                   minWidth: '100px', 
+                   textAlign: 'left', 
+                   justifyContent: 'flex-start', 
+                   display: 'flex', 
+                   alignItems: 'center', 
+                   gap: '5px',
+                   border: activeWindowOrder[activeWindowOrder.length - 1] === key ? '2px inset #fff' : '2px outset #fff',
+                   background: activeWindowOrder[activeWindowOrder.length - 1] === key ? '#e0e0e0' : '#c0c0c0'
                  }}
                >
                  <img 
-                   src={`/icons/${APPS.find(a => a.id === key)?.iconFile}`} 
+                   src={`/icons/${APPS.find(a => a.id === key)?.iconFile || 'notepad.ico'}`} 
                    alt="" 
                    style={{height: '16px'}}
                    onError={(e) => e.target.style.display='none'}
                  />
-                 {APPS.find(a => a.id === key)?.title}
+                 {APPS.find(a => a.id === key)?.title || 'Notepad'}
                </Button>
              ))}
           </div>
